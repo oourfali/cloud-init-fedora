@@ -228,7 +228,9 @@ def subp(args, input_=None):
         stderr=subprocess.PIPE, stdin=subprocess.PIPE)
     out, err = sp.communicate(input_)
     if sp.returncode is not 0:
-        raise subprocess.CalledProcessError(sp.returncode, args, (out, err))
+        _exc = subprocess.CalledProcessError(sp.returncode, args)
+        _exc.output = (out, err)
+        raise _exc
     return(out, err)
 
 

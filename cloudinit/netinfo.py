@@ -21,10 +21,18 @@
 
 import subprocess
 
+def check_output(args):
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+    out, err = proc.communicate()
+    ret = proc.returncode
+    if ret:
+        raise subprocess.CalledProcessError(ret, ' '.join(args))
+    return out
+
 
 def netdev_info(empty=""):
     fields = ("hwaddr", "addr", "bcast", "mask")
-    ifcfg_out = str(subprocess.check_output(["ifconfig", "-a"]))
+    ifcfg_out = str(check_output(["ifconfig", "-a"]))
     devs = {}
     for line in ifcfg_out.splitlines():
         if len(line) == 0:
@@ -70,7 +78,7 @@ def netdev_info(empty=""):
 
 
 def route_info():
-    route_out = str(subprocess.check_output(["route", "-n"]))
+    route_out = str(check_output(["route", "-n"]))
     routes = []
     for line in route_out.splitlines()[1:]:
         if not line:
