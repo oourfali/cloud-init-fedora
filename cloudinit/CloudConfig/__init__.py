@@ -27,6 +27,7 @@ import traceback
 import os
 import subprocess
 import time
+import platform
 
 per_instance = cloudinit.per_instance
 per_always = cloudinit.per_always
@@ -253,6 +254,27 @@ def run_per_instance(name, func, args, clear_on_fail=False):
         raise
 
 
+def get_package_manager():
+    if 'linux_distribution' in platform.__dict__:
+        distname, _, _ = platform.linux_distribution(
+            full_distribution_name=0)
+    else:
+        distname, _, _ = platform.dist()
+    yum_dists = ['redhat', 'fedora', 'centos']
+    apt_dists = ['debian', 'ubuntu']
+    if distname.lower() in yum_dists:
+        return 'yum'
+    elif distname.lower() in apt_dists:
+        return 'apt'
+    elif os.system('yum --help >/dev/null 2>&1'):
+        return 'yum'
+    elif os.system('apt-get --help >/dev/null 2>&1'):
+        return 'apt'
+
+
+_PACKAGE_MANAGER = get_package_manager()
+
+
 # apt_get top level command (install, update...), and args to pass it
 def apt_get(tlc, args=None):
     if args is None:
@@ -265,10 +287,22 @@ def apt_get(tlc, args=None):
     subprocess.check_call(cmd, env=e)
 
 
-def update_package_sources():
-    run_per_instance("update-sources", apt_get, ("update",))
+def yum(tlc, args=None):
+    if args is None:
+        args = []
+    cmd = ['yum', '-y', tlc]
+    cmd.extend(args)
+    subprocess.check_call(cmd)
 
 
 def install_packages(pkglist):
-    update_package_sources()
-    apt_get("install", pkglist)
+    if _PACKAGE_MANAGER == "yum":
+        run_per_instance("update-sources", yum, ("makecache",))
+        yum("install", pkglist)
+    elif _PACKAGE_MANAGER == "apt":
+        run_per_instance("update-sources", apt_get, ("update",))
+        apt_get("install", pkglist)
+    else:
+        raise Exception("Unknown distribution, unable to install packages %s" %
+            pkglist)
+
