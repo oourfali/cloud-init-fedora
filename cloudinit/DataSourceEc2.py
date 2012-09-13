@@ -109,7 +109,7 @@ class DataSourceEc2(DataSource.DataSource):
             util.logexc(log)
             log.warn("Failed to get timeout, using %s" % timeout)
 
-        def_mdurls = ["http://169.254.169.254", "http://instance-data:8773"]
+        def_mdurls = ["http://169.254.169.254", "http://instance-data.:8773"]
         mdurls = mcfg.get("metadata_urls", def_mdurls)
 
         # Remove addresses from the list that wont resolve.
